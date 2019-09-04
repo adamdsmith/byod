@@ -1,0 +1,31 @@
+Type: Compendium
+Package: QA/QC test
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.1
+Authors@R: 
+    person(given = "First",
+           family = "Last",
+           role = c("aut", "cre"),
+           email = "first.last@example.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Testing binder for QA/QC session
+License: What license it uses
+Depends: 
+    pacman,
+    DataExplorer,
+    dplyr,
+    ggforce,
+    ggplot2,
+    Hmisc,
+    lubridate,
+    readr,
+    skimr,
+    summarytools,
+    tidyr,
+    viridis
+Remotes: 
+    tidyverse/dplyr,
+    tidyverse/ggplot2,
+    tidyverse/tidyr
+Encoding: UTF-8
+LazyData: true

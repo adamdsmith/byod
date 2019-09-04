@@ -1,51 +1,36 @@
-# Script copied from https://owi.usgs.gov/blog/data-munging/
+pacman::p_load(Hmisc, skimr, dplyr, ggplot2, ggforce, readr, summarytools, DataExplorer)
 
-# load libraries
-library(dplyr)
-library(dataRetrieval)
-library(lubridate)
-library(tidyr)
-library(ggplot2)
-library(viridis)
+df <- data.frame(
+  gp = factor(rep(letters[1:3], each = 10)),
+  y = rnorm(30)
+)
+ds <- do.call(rbind, lapply(split(df, df$gp), function(d) {
+  data.frame(mean = mean(d$y), sd = sd(d$y), gp = d$gp)
+}))
 
-# Get data for the Yahara River at Windsor in Dane County, Wisconsin
-yahara_no <- '05427718'
+# The summary data frame ds is used to plot larger red points on top
+# of the raw data. Note that we don't need to supply `data` or `mapping`
+# in each layer because the defaults from ggplot() are used.
+ggplot(df, aes(gp, y)) +
+  geom_point() +
+  geom_point(data = ds, aes(y = mean), colour = 'red', size = 3)
 
-# define parameters of interest, and get those parameter names
-params <- c('00060', '00671', '80154', '00665')
+# Same plot as above, declaring only the data frame in ggplot().
+# Note how the x and y aesthetics must now be declared in
+# each geom_point() layer.
+ggplot(df) +
+  geom_point(aes(gp, y)) +
+  geom_point(data = ds, aes(gp, mean), colour = 'red', size = 3)
 
-# get daily values from NWIS
-yahara_dat <- readNWISdv(siteNumbers = yahara_no, parameterCd = params, 
-                         startDate = '1997-10-01', endDate = '2017-09-30')
-
-# rename columns using renameNWISColumns from package dataRetrieval
-yahara_dat <- renameNWISColumns(yahara_dat, 
-                                p00665 = "TP_mgL",
-                                p00671 = "Orthophosphate_mgL",
-                                p80154 = "SS_mgL")
-
-yahara_names <- names(yahara_dat)
-grep('_cd', yahara_names) # returns the index of the match
-grep('_cd', yahara_names, value = TRUE) # returns the matched elements themselves
-gsub('_cd', '_code', yahara_names)
-yahara_dat <- select(yahara_dat, -contains('_cd'))
-
-
-# add water year variable "waterYear" to our dataframe
-yahara_dat <- addWaterYear(yahara_dat)
-
-# calculate cumulative discharge for each year by first grouping by water year,
-# and then using the "cumsum" function. Add day of water year for plotting purposes.
-# These steps will build a new dataframe, with the existing information in yahara_dat
-# but with two additional columns.
-cumulative_dat <- group_by(yahara_dat, waterYear) %>%
-  mutate(cumulative_dis = cumsum(Flow), 
-         wy_doy = seq(1:n()))
-
-# visually compare cumulative discharge across years
-ggplot(cumulative_dat, aes(x = wy_doy, y = cumulative_dis, group = waterYear)) +
-  geom_line(aes(color = waterYear)) +
-  scale_color_viridis_c() +
-  scale_x_continuous(breaks = c(1, 93, 184, 275), labels = c("Oct 1", "Jan 1", "Apr 1", "July 1")) +
-  theme_bw() +
-  labs(color = "Water Year", x = "", y = "Cumulative Discharge")
+# Alternatively we can fully specify the plot in each layer. This
+# is not useful here, but can be more clear when working with complex
+# mult-dataset graphics
+ggplot() +
+  geom_point(data = df, aes(gp, y)) +
+  geom_point(data = ds, aes(gp, mean), colour = 'red', size = 3) +
+  geom_errorbar(
+    data = ds,
+    aes(gp, mean, ymin = mean - sd, ymax = mean + sd),
+    colour = 'red',
+    width = 0.4
+  )
